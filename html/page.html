@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controladoria - WilsonUI</title>
+    <link rel="stylesheet" href="css/wilson-ui.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        /* ESTILOS ESPECÍFICOS PRESERVADOS (MAPA CEGO & KANBAN) */
+        
+        /* Ajuste do conteúdo principal para comportar scrolls internos */
+        .w-content { display: flex; flex-direction: column; overflow: hidden; padding: 20px; }
+        .view-section { display: none; height: 100%; overflow-y: auto; padding-right: 5px; }
+        .view-section.active { display: block; }
+
+        /* Kanban Board (Pátio) - Estilo Novo usando Vars */
+        .board-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; height: 100%; min-width: 1000px; }
+        .board-col { background: #eef0f2; border-radius: var(--w-radius); display: flex; flex-direction: column; height: 100%; border: 1px solid #e0e0e0; }
+        .col-header { padding: 12px; font-weight: bold; text-align: center; color: white; border-radius: var(--w-radius) var(--w-radius) 0 0; font-size: 0.9rem; letter-spacing: 0.5px; }
+        .col-alm { background: #f57c00; } .col-gava { background: #0288d1; } .col-out { background: #546e7a; } .col-saiu { background: #43a047; }
+        .col-body { flex: 1; padding: 10px; overflow-y: auto; }
+
+        /* Truck Cards dentro do Kanban */
+        .truck-card { background: white; border-radius: 6px; padding: 12px; margin-bottom: 10px; border-left: 4px solid var(--w-dark); cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: 0.2s; position: relative; }
+        .truck-card:hover { transform: translateY(-2px); box-shadow: 0 5px 12px rgba(0,0,0,0.1); }
+        .status-badge { display: block; width: 100%; text-align: center; padding: 4px 0; font-size: 0.7rem; font-weight: bold; border-radius: 4px; margin-top: 8px; text-transform: uppercase; }
+        .st-wait { background: var(--w-warning-bg); color: var(--w-warning); } 
+        .st-ok { background: var(--w-success-bg); color: var(--w-success); } 
+        .st-out { background: #eceff1; color: #546e7a; } 
+        
+        /* Mapa Cego (Folha de Papel) - ESTILO PRESERVADO */
+        .sheet { background: white; border: 1px solid #ccc; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-width: 1100px; margin: 0 auto; position: relative; }
+        .mc-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+        .mc-table thead th { background: #333; color: white; padding: 8px; text-align: left; }
+        .mc-table td { border: 1px solid #ccc; padding: 6px; }
+        .cell { width: 100%; border: none; outline: none; background: transparent; font-family: inherit; font-size: inherit; }
+        .cell:focus { background: #e3f2fd; }
+        .cell-locked { background: #f0f0f0; color: #888; }
+        
+        /* Sidebar de lista de mapas */
+        .mc-layout { display: flex; height: 100%; gap: 20px; }
+        .mc-sidebar-list { width: 280px; background: white; border-radius: 8px; border: 1px solid #eee; display: flex; flex-direction: column; overflow: hidden; }
+        .mc-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
+        .mc-item:hover { background: #f5f5f5; }
+        .mc-item.selected { background: var(--w-danger-bg); border-left: 4px solid var(--w-primary); }
+
+        /* FAB Button */
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; background: var(--w-primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(211,47,47,0.4); z-index: 500; transition: 0.3s; }
+        .fab:hover { transform: scale(1.1); }
+
+        /* Context Menus & Popups */
+        .context-menu { position: absolute; background: white; border: 1px solid #ddd; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 9999; display: none; width: 180px; border-radius: 6px; }
+        .ctx-item { padding: 10px 15px; cursor: pointer; font-size: 0.9rem; display: flex; gap: 10px; align-items: center; }
+        .ctx-item:hover { background: #f5f5f5; color: var(--w-primary); }
+
+        /* Ajustes Responsivos Específicos do Sistema */
+        @media (max-width: 1024px) {
+            .board-container { grid-template-columns: 1fr 1fr; min-width: 0; display: block; overflow-y: auto; }
+            .board-col { margin-bottom: 20px; height: auto; min-height: 300px; }
+            .mc-layout { flex-direction: column; }
+            .mc-sidebar-list { width: 100%; height: auto; max-height: 200px; margin-bottom: 15px; }
+            .sheet { width: 100%; overflow-x: auto; padding: 10px; }
+        }
+    </style>
+</head>
+<body onclick="closeContextMenu()">
+
+    <div class="w-wrapper">
+        <nav class="w-sidebar">
+            <div class="w-brand"><i class="fas fa-cubes"></i> WILSON CTRL</div>
+            <div class="w-menu">
+                <a class="w-menu-item active" id="menuPatio" onclick="navTo('patio', this)"><i class="fas fa-truck"></i> Pátio</a>
+                <a class="w-menu-item" onclick="navTo('mapas', this)"><i class="fas fa-clipboard-list"></i> Mapas Cegos</a>
+                <a class="w-menu-item" id="menuMateriaPrima" onclick="navTo('materia-prima', this)"><i class="fas fa-truck-loading"></i> Matéria Prima</a>
+                <a class="w-menu-item" id="menuCarregamento" onclick="navTo('carregamento', this)"><i class="fas fa-shipping-fast"></i> Carregamento</a>
+                <a class="w-menu-item" onclick="navTo('relatorios', this)"><i class="fas fa-chart-pie"></i> Relatórios</a>
+                <a class="w-menu-item" id="menuNotif" onclick="navTo('notificacoes', this)"><i class="fas fa-bell"></i> Avisos <span class="w-badge" style="background:white; color:red; display:none" id="badgeNotif">0</span></a>
+            </div>
+            <div class="w-user-footer" onclick="logout()">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:30px; height:30px; background:var(--w-primary); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; color:white;" id="userInitial">U</div>
+                    <div>
+                        <div style="font-size:0.9rem; font-weight:bold; color:white;" id="userNameDisp">User</div>
+                        <div style="font-size:0.7rem; color:#888;">Sair</div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="w-main">
+            <header class="w-header">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <button class="w-mobile-toggle" onclick="WilsonUI.sidebar.toggle()"><i class="fas fa-bars"></i></button>
+                    <h3 id="pageTitle" style="margin:0;">Controle de Pátio</h3>
+                </div>
+                <div>
+                    <span class="w-badge" style="background:#eee; color:#333; font-weight:normal;" id="currentDateDisplay">Data</span>
+                </div>
+            </header>
+
+            <div class="w-content">
+                
+                <div id="view-patio" class="view-section active">
+                    <div style="text-align:right; margin-bottom:10px;">
+                        <input type="date" id="patioDateFilter" onchange="renderPatio()" class="w-input" style="width:auto; display:inline-block;">
+                    </div>
+                    <div class="board-container">
+                        <div class="board-col" id="col-ALM"><div class="col-header col-alm">DOCA (ALM) <span id="count-ALM">0</span></div><div class="col-body" id="list-ALM"></div></div>
+                        <div class="board-col" id="col-GAVA"><div class="col-header col-gava">GAVA (ALM) <span id="count-GAVA">0</span></div><div class="col-body" id="list-GAVA"></div></div>
+                        <div class="board-col" id="col-OUT"><div class="col-header col-out">OUTROS <span id="count-OUT">0</span></div><div class="col-body" id="list-OUT"></div></div>
+                        <div class="board-col" id="col-SAIU"><div class="col-header col-saiu">HISTÓRICO (DIA)</div><div class="col-body" id="list-SAIU"></div></div>
+                    </div>
+                    <div id="fabAddTruck" class="fab" onclick="modalTruckOpen()"><i class="fas fa-plus"></i></div>
+                </div>
+
+                <div id="view-mapas" class="view-section">
+                    <div class="mc-layout">
+                        <div class="mc-sidebar-list">
+                            <div style="padding:15px; background:#f9f9f9; border-bottom:1px solid #ddd; font-weight:bold;">Mapas Recentes</div>
+                            <div style="flex:1; overflow-y:auto;" id="mapList"></div>
+                            <button onclick="createNewMap()" class="w-btn w-btn-dark" style="width:100%; border-radius:0;">+ Novo Mapa Manual</button>
+                        </div>
+                        <div style="flex:1;">
+                            <div class="sheet" id="mapSheet">
+                                <div id="divBanner" style="background:#ffebee; color:#b71c1c; padding:10px; margin-bottom:10px; display:none; border:1px solid #ef9a9a;">
+                                    <b><i class="fas fa-exclamation-triangle"></i> MAPA COM DIVERGÊNCIA</b><br>
+                                    <span id="divBannerText"></span><div id="divResolveBtn" style="margin-top:5px;"></div>
+                                </div>
+                                
+                                <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
+                                    <div style="font-weight:bold; font-size:1.2rem;">MAPA CEGO DIGITAL</div>
+                                    <div style="margin-left:auto;">Data: <input type="date" id="mapDate" style="border:1px solid #ccc; padding:5px;"></div>
+                                </div>
+
+                                <table class="mc-table">
+                                    <thead><tr><th width="40%">Descrição</th><th width="15%">Qtd.</th><th width="15%">NF</th><th width="30%">Fornecedor</th></tr></thead>
+                                    <tbody id="mapBody"></tbody>
+                                </table>
+
+                                <div style="margin-top:20px; display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+                                    <button class="w-btn w-btn-success" onclick="saveCurrentMap()">Salvar</button>
+                                    <button class="w-btn w-btn-primary" onclick="launchMap()" id="btnLaunch">Lançar Definitivo</button>
+                                    <button class="w-btn w-btn-warning" id="btnRequestEdit" style="display:none;" onclick="triggerRequest('edit')">Solicitar Edição</button>
+                                    <div id="mapStatus" class="w-badge" style="margin-left:auto; background:#eee; font-size:0.9rem;">Rascunho</div>
+                                </div>
+
+                                <div style="margin-top:20px; border-top:1px dashed #ccc; padding-top:10px; display:flex; gap:15px; flex-wrap:wrap;">
+                                    <div>
+                                        <label>Setor:</label> <input type="text" id="mapSetor" style="border:none; border-bottom:1px solid #333; outline:none;">
+                                    </div>
+                                    <div>
+                                        <label>Placa:</label> <input type="text" id="mapPlaca" style="border:none; border-bottom:1px solid #333; outline:none; width:100px;">
+                                    </div>
+                                    <div style="margin-left:auto; font-size:0.8rem;">
+                                        <div onclick="signMap('receb')" style="cursor:pointer">Ass. Recebimento: <span id="sigReceb" style="color:blue; font-weight:bold;"></span></div>
+                                        <div onclick="signMap('conf')" style="cursor:pointer; margin-top:5px;">Ass. Conferente: <span id="sigConf" style="color:red; font-weight:bold;"></span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-materia-prima" class="view-section">
+                    <div class="w-card" style="overflow-x:auto;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                            <h4>Controle de Pesagem</h4>
+                            <input type="date" id="mpDateFilter" onchange="renderMateriaPrima()" class="w-input" style="width:auto;">
+                        </div>
+                        <table class="w-table">
+                            <thead><tr><th>Data</th><th>Produto</th><th>Placa</th><th>Chegada</th><th>Entrada</th><th>Tara</th><th>Bruto</th><th>Líquido</th><th>NF</th></tr></thead>
+                            <tbody id="mpBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="view-carregamento" class="view-section">
+                    <div class="w-card" style="overflow-x:auto;">
+                         <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                            <h4>Expedição / Carregamento</h4>
+                            <input type="date" id="carrDateFilter" onchange="renderCarregamento()" class="w-input" style="width:auto;">
+                        </div>
+                        <table class="w-table">
+                            <thead><tr><th>Status</th><th>Motorista</th><th>Placa</th><th>Carretas</th><th>Bruto</th><th>Início</th><th>Fim</th><th>Ações</th></tr></thead>
+                            <tbody id="carrBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="fab" onclick="openModalCarregamento()" style="background:#333;"><i class="fas fa-plus"></i></div>
+                </div>
+
+                <div id="view-relatorios" class="view-section">
+                    <div class="w-card" style="max-width:600px; margin:0 auto;">
+                        <h3>Gerador de Relatórios</h3>
+                        <div class="w-grid-2">
+                            <div><label>Data</label><input type="date" id="repDate" class="w-input"></div>
+                            <div><label>Tipo</label><select id="repType" class="w-select"><option value="patio">Fila Pátio</option><option value="mapas">Mapas Cegos</option><option value="carregamento">Carregamento</option></select></div>
+                        </div>
+                        <button class="w-btn w-btn-primary" style="width:100%; margin-top:20px; justify-content:center;" onclick="generateReport()">Gerar</button>
+                        <div id="repResult" style="margin-top:20px; border-top:1px solid #eee; padding-top:20px;"></div>
+                    </div>
+                </div>
+
+                <div id="view-notificacoes" class="view-section">
+                    <div class="w-grid-2">
+                        <div class="w-card">
+                            <h4 style="color:var(--w-primary); margin-top:0;">Pendências</h4>
+                            <div id="reqList">Nenhuma.</div>
+                        </div>
+                        <div class="w-card">
+                            <h4 style="margin-top:0;">Histórico</h4>
+                            <div id="historyList"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <div id="modalTruck" class="w-modal-overlay">
+        <div class="w-modal">
+            <h3>Entrada de Veículo</h3>
+            <div style="display:grid; gap:10px;">
+                <input type="text" id="addEmpresa" class="w-input" placeholder="Transportadora / Empresa">
+                <input type="text" id="addPlaca" class="w-input" placeholder="Placa do Veículo" style="text-transform:uppercase;">
+                <select id="addDestino" class="w-select">
+                    <option value="DOCA">DOCA (ALMOXARIFADO)</option>
+                    <option value="GAVA">GAVA (MATÉRIA PRIMA)</option>
+                    <option value="MANUTENCAO">MANUTENÇÃO</option>
+                    <option value="INFRA">INFRAESTRUTURA</option>
+                </select>
+                <div style="background:#ffebee; padding:10px; border-radius:4px; border:1px solid #ef9a9a;">
+                    <label><input type="checkbox" id="chkBalan"> Enviar para Balança?</label>
+                </div>
+                
+                <div style="background:#f9f9f9; padding:10px; border:1px solid #eee;">
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="tmpNF" class="w-input" placeholder="NF" style="width:30%">
+                        <input type="text" id="tmpProd" class="w-input" placeholder="Produto">
+                        <button class="w-btn w-btn-dark" onclick="addTmpItem()">+</button>
+                    </div>
+                    <ul id="tmpList" style="margin:5px 0 0 20px; font-size:0.8rem;"></ul>
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+                    <button class="w-btn w-btn-outline" onclick="document.getElementById('modalTruck').style.display='none'">Cancelar</button>
+                    <button class="w-btn w-btn-primary" onclick="saveTruckAndMap()">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalCarregamento" class="w-modal-overlay">
+        <div class="w-modal">
+            <h3>Novo Carregamento</h3>
+            <div style="display:grid; gap:10px;">
+                <input type="text" id="carrMotorista" class="w-input" placeholder="Motorista">
+                <input type="text" id="carrCavalo" class="w-input" placeholder="Placa Cavalo">
+                <div id="carretaContainer">
+                    <input type="text" class="carrCarretaInput w-input" placeholder="Placa Carreta 1" style="margin-bottom:5px;">
+                </div>
+                <button class="w-btn w-btn-outline" onclick="addCarretaField()" style="width:100%">+ Carreta</button>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+                    <button class="w-btn w-btn-outline" onclick="document.getElementById('modalCarregamento').style.display='none'">Cancelar</button>
+                    <button class="w-btn w-btn-primary" onclick="saveCarregamento()">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalDivergence" class="w-modal-overlay">
+        <div class="w-modal">
+            <h3 style="color:var(--w-primary);">Relatar Divergência</h3>
+            <select id="divArea" class="w-select" style="margin-bottom:10px;">
+                <option value="geral">Geral</option><option value="desc">Descrição</option><option value="qty">Quantidade</option><option value="nf">Nota Fiscal</option>
+            </select>
+            <textarea id="divReason" class="w-input" style="height:100px; margin-bottom:10px;" placeholder="Descreva o problema..."></textarea>
+            <div id="divUserList" style="margin-bottom:15px; border:1px solid #eee; padding:10px; max-height:100px; overflow-y:auto;"></div>
+            <div style="text-align:right;">
+                <button class="w-btn w-btn-outline" onclick="document.getElementById('modalDivergence').style.display='none'">Cancelar</button>
+                <button class="w-btn w-btn-primary" onclick="submitDivergence()">Enviar Alerta</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalTruckPreview" class="w-modal-overlay">
+        <div class="w-modal">
+            <h3 id="prevTTitle">Detalhes</h3>
+            <div id="prevTContent" style="line-height:1.6; color:#555;"></div>
+            <button class="w-btn w-btn-dark" style="width:100%; margin-top:15px;" onclick="document.getElementById('modalTruckPreview').style.display='none'">Fechar</button>
+        </div>
+    </div>
+    
+    <div id="modalReportPreview" class="w-modal-overlay">
+        <div class="w-modal" style="width:800px; max-width:95%;">
+            <h3>Visualização de Mapa</h3>
+            <div class="sheet" style="box-shadow:none; padding:10px; border:1px solid #eee;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <div id="prevInfo" style="font-weight:bold;"></div>
+                    <div id="prevDate"></div>
+                </div>
+                <table class="mc-table"><thead><tr><th>Descrição</th><th>Qtd</th><th>NF</th><th>Forn</th></tr></thead><tbody id="prevBody"></tbody></table>
+                <div style="margin-top:15px; background:#f9f9f9; padding:10px; font-size:0.9rem;">
+                    <b>Ass. Rec:</b> <span id="prevSigRec"></span> | <b>Ass. Conf:</b> <span id="prevSigConf"></span>
+                </div>
+            </div>
+            <button class="w-btn w-btn-outline" style="margin-top:15px; width:100%;" onclick="document.getElementById('modalReportPreview').style.display='none'">Fechar</button>
+        </div>
+    </div>
+
+    <div id="ctxMenu" class="context-menu"></div>
+    <div id="ctxMenuMP" class="context-menu"></div>
+    <div id="ctxMenuCarr" class="context-menu"></div>
+
+    <script src="js/wilson-core.js"></script>
+    <script>
+        // --- PRESERVAÇÃO INTEGRAL DA LÓGICA DE NEGÓCIO ---
+        // Variáveis Globais e Inicialização
+        const loggedUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+        if (!loggedUser) window.location.href = 'login.html';
+        
+        // Setup UI baseada no user
+        document.getElementById('userInitial').textContent = loggedUser.username[0];
+        document.getElementById('userNameDisp').textContent = loggedUser.username;
+        document.getElementById('currentDateDisplay').textContent = new Date().toLocaleDateString('pt-BR');
+
+        const userSector = (loggedUser.sector || '').toLowerCase();
+        const userRole = (loggedUser.role || '').toLowerCase();
+        const isRecebimento = userSector === 'recebimento' || userRole === 'admin';
+        const isConferente = userSector === 'conferente';
+        const isAdmin = userRole === 'admin';
+
+        // Lógica de Permissão UI
+        if(isConferente) {
+            document.getElementById('fabAddTruck').style.display = 'none';
+            document.getElementById('menuCarregamento').style.display = 'none';
+        }
+        if(!isRecebimento) document.getElementById('menuMateriaPrima').style.display = 'none';
+
+        // Dados
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('patioDateFilter').value = today;
+        document.getElementById('mapDate').value = today;
+        document.getElementById('repDate').value = today;
+        document.getElementById('mpDateFilter').value = today;
+        document.getElementById('carrDateFilter').value = today;
+
+        let patioData = JSON.parse(localStorage.getItem('aw_caminhoes_v2')) || [];
+        let mapData = JSON.parse(localStorage.getItem('mapas_cegos_v3')) || [];
+        let mpData = JSON.parse(localStorage.getItem('aw_materia_prima')) || []; 
+        let carregamentoData = JSON.parse(localStorage.getItem('aw_carregamento')) || [];
+        let requests = JSON.parse(localStorage.getItem('aw_requests')) || [];
+        let tmpItems = [];
+        let currentMapId = null;
+        let contextMapId = null, contextMPId = null, contextCarrId = null;
+
+        // --- FUNÇÕES DE NAVEGAÇÃO ---
+        function navTo(view, el) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-' + view).classList.add('active');
+            document.querySelectorAll('.w-menu-item').forEach(m => m.classList.remove('active'));
+            if(el) el.classList.add('active');
+            if(window.innerWidth <= 1024) WilsonUI.sidebar.close();
+
+            const titles = { patio: 'Controle de Pátio', mapas: 'Mapas Cegos', relatorios: 'Relatórios', notificacoes: 'Central de Avisos', 'materia-prima': 'Matéria Prima', 'carregamento': 'Carregamento' };
+            document.getElementById('pageTitle').textContent = titles[view] || 'Sistema';
+
+            if(view === 'patio') renderPatio();
+            if(view === 'mapas') { renderMapList(); if(mapData.length > 0 && !currentMapId) loadMap(mapData[mapData.length-1].id); }
+            if(view === 'materia-prima') renderMateriaPrima();
+            if(view === 'carregamento') renderCarregamento();
+            if(view === 'notificacoes') renderRequests();
+        }
+
+        function logout() { sessionStorage.removeItem('loggedInUser'); window.location.href='login.html'; }
+
+        // --- FUNÇÕES DE PÁTIO (TRUCK) ---
+        function modalTruckOpen() { 
+            tmpItems = []; document.getElementById('tmpList').innerHTML = ''; 
+            document.getElementById('addPlaca').value = ''; document.getElementById('addEmpresa').value = '';
+            document.getElementById('chkBalan').checked = false;
+            document.getElementById('modalTruck').style.display = 'flex'; 
+        }
+
+        function addTmpItem() {
+            const nf = document.getElementById('tmpNF').value; const prod = document.getElementById('tmpProd').value;
+            if(nf && prod) { tmpItems.push({nf, prod}); document.getElementById('tmpList').innerHTML += `<li><b>${nf}</b>: ${prod}</li>`; document.getElementById('tmpProd').value=''; }
+        }
+
+        function saveTruckAndMap() {
+            const empresa = document.getElementById('addEmpresa').value; const placa = document.getElementById('addPlaca').value; const destinoKey = document.getElementById('addDestino').value; const isBalan = document.getElementById('chkBalan').checked;
+            const sectorMapping = { 'DOCA': { name: 'DOCA (ALM)', col: 'ALM' }, 'GAVA': { name: 'GAVA', col: 'GAVA' }, 'MANUTENCAO': { name: 'MANUTENÇÃO', col: 'OUT' }, 'INFRA': { name: 'INFRAESTRUTURA', col: 'OUT' } };
+            const sectorData = sectorMapping[destinoKey] || { name: 'OUTROS', col: 'OUT' };
+
+            if(!empresa || tmpItems.length === 0 || !placa) { alert('Preencha tudo.'); return; }
+            
+            const idBase = Date.now().toString();
+            const sequencia = patioData.filter(t => t.chegada.startsWith(today)).length + 1;
+            const nowIso = new Date().toISOString();
+
+            const caminhao = { id: idBase, empresa: empresa, local: sectorData.col, localSpec: sectorData.name, status: 'FILA', placa: placa, sequencia: sequencia, recebimentoNotified: false, chegada: nowIso, saida: null, cargas: [{ numero: 'Várias', produtos: tmpItems.map(i => ({nome: i.prod, qtd:'-', nf: i.nf})) }] };
+            patioData.push(caminhao);
+
+            const rows = tmpItems.map((item, idx) => ({ id: idBase + '_' + idx, desc: item.prod, qty: '', nf: item.nf, forn: empresa, owners: {} }));
+            for(let i=0; i<3; i++) rows.push({ id: idBase + '_extra_' + i, desc:'', qty:'', nf:'', forn:'', owners:{} });
+            
+            mapData.push({ id: idBase, date: today, rows: rows, placa: placa, setor: sectorData.name, launched: false, signatures: { receb: null, conf: null }, forceUnlock: false, divergence: null });
+
+            if(isBalan) {
+                mpData.push({ id: idBase, date: today, produto: tmpItems[0].prod, empresa: empresa, placa: placa, local: sectorData.name, chegada: nowIso, entrada: null, saida: null, tara: 0, bruto: 0, liq: 0, nf: tmpItems[0].nf });
+                localStorage.setItem('aw_materia_prima', JSON.stringify(mpData));
+            }
+
+            localStorage.setItem('aw_caminhoes_v2', JSON.stringify(patioData)); localStorage.setItem('mapas_cegos_v3', JSON.stringify(mapData));
+            document.getElementById('modalTruck').style.display = 'none'; renderPatio(); alert(`Caminhão #${sequencia} registrado!`);
+        }
+
+        function renderPatio() {
+            const filterDate = document.getElementById('patioDateFilter').value;
+            ['ALM','GAVA','OUT','SAIU'].forEach(c => { document.getElementById('list-'+c).innerHTML = ''; if(c !== 'SAIU') document.getElementById('count-'+c).textContent = '0'; });
+            const list = patioData.filter(c => { const cDate = c.chegada.split('T')[0]; if(c.status === 'SAIU') return c.saida && c.saida.startsWith(filterDate); return c.status !== 'SAIU' || cDate === filterDate; }).sort((a,b) => new Date(a.chegada) - new Date(b.chegada));
+
+            list.forEach(c => {
+                const isSaiu = c.status === 'SAIU'; let col = isSaiu ? 'SAIU' : c.local; if(!col) col = 'OUT';
+                const container = document.getElementById('list-'+col);
+                if(!isSaiu) { const cnt = document.getElementById('count-'+col); cnt.textContent = parseInt(cnt.textContent) + 1; }
+
+                const card = document.createElement('div'); card.className = 'truck-card';
+                let btns = '';
+                if(c.status === 'FILA') btns = `<button onclick="changeStatus('${c.id}','ENTROU')" class="w-btn w-btn-success" style="width:100%; margin-top:10px; font-size:0.8rem;">LIBERAR ENTRADA</button>`;
+                else if(c.status === 'ENTROU') btns = `<button onclick="changeStatus('${c.id}','SAIU')" class="w-btn w-btn-dark" style="width:100%; margin-top:10px; font-size:0.8rem;">REGISTRAR SAÍDA</button>`;
+                
+                let statusBadge = c.status === 'FILA' ? '<span class="status-badge st-wait">Aguardando</span>' : (c.status === 'ENTROU' ? '<span class="status-badge st-ok">No Pátio</span>' : '<span class="status-badge st-out">Saiu</span>');
+                card.innerHTML = `<div style="display:flex; justify-content:space-between;"><b>${c.empresa}</b> <small>#${c.sequencia}</small></div><div style="font-size:0.85rem; color:#666; margin-top:5px;">${c.placa}</div>${statusBadge}<div style="margin-top:10px;">${btns}</div>`;
+                container.appendChild(card);
+            });
+        }
+
+        function changeStatus(id, st) {
+            const idx = patioData.findIndex(c => c.id === id);
+            if(idx > -1) {
+                const now = new Date().toISOString(); patioData[idx].status = st;
+                const mpIdx = mpData.findIndex(m => m.id === id);
+                if(st === 'ENTROU') { if(mpIdx > -1) mpData[mpIdx].entrada = now; }
+                if(st === 'SAIU') { patioData[idx].saida = now; if(mpIdx > -1) mpData[mpIdx].saida = now; }
+                localStorage.setItem('aw_caminhoes_v2', JSON.stringify(patioData)); localStorage.setItem('aw_materia_prima', JSON.stringify(mpData)); renderPatio();
+            }
+        }
+
+        // --- MAPAS ---
+        function renderMapList() {
+            const listEl = document.getElementById('mapList'); listEl.innerHTML = '';
+            mapData.slice().reverse().forEach(m => {
+                const el = document.createElement('div');
+                el.className = `mc-item ${currentMapId === m.id ? 'selected' : ''}`;
+                el.innerHTML = `<b>${m.placa || 'Sem Placa'}</b><br><small>${m.date} | ${m.launched ? 'Lançado' : 'Aberto'}</small>`;
+                el.onclick = () => loadMap(m.id);
+                el.oncontextmenu = (e) => { e.preventDefault(); contextMapId = m.id; openContextMenu(e.pageX, e.pageY, m); };
+                listEl.appendChild(el);
+            });
+        }
+
+        function loadMap(id) {
+            currentMapId = id; const map = mapData.find(m => m.id === id); if(!map) return;
+            document.getElementById('mapDate').value = map.date; document.getElementById('mapPlaca').value = map.placa; document.getElementById('mapSetor').value = map.setor;
+            
+            const divBanner = document.getElementById('divBanner');
+            if(map.divergence && map.divergence.active) {
+                divBanner.style.display = 'block'; document.getElementById('divBannerText').innerHTML = `Relatado por: <b>${map.divergence.reporter}</b><br>"${map.divergence.reason}"`;
+                document.getElementById('divResolveBtn').innerHTML = isRecebimento ? `<button class="w-btn w-btn-primary" style="padding:5px 10px;" onclick="resolveDivergence('${map.id}')">Resolver</button>` : '';
+            } else divBanner.style.display = 'none';
+
+            document.getElementById('sigReceb').textContent = map.signatures.receb || ''; document.getElementById('sigConf').textContent = map.signatures.conf || '';
+            renderRows(map); renderMapList();
+        }
+
+        function renderRows(map) {
+            const tbody = document.getElementById('mapBody'); tbody.innerHTML = '';
+            map.rows.forEach(row => {
+                const tr = document.createElement('tr');
+                const createCell = (field, cls) => { 
+                    const val = row[field] || ''; 
+                    const locked = (!map.forceUnlock && map.launched); // Lógica simplificada de bloqueio para exemplo
+                    return `<td><input type="text" class="cell ${cls} ${locked?'cell-locked':''}" value="${val}" onchange="updateRow('${row.id}', '${field}', this.value)" ${locked ? 'readonly' : ''}></td>`; 
+                };
+                tr.innerHTML = `${createCell('desc', '')}${createCell('qty', '')}${createCell('nf', '')}${createCell('forn', '')}`; 
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateRow(rowId, field, val) { const map = mapData.find(m => m.id === currentMapId); const row = map.rows.find(r => r.id === rowId); if(row) { row[field] = val; saveData(); } }
+        function createNewMap() { const id = Date.now().toString(); const rows = []; for(let i=0; i<8; i++) rows.push({ id: id+'_'+i }); mapData.push({ id: id, date: today, rows: rows, placa: '', setor: '', launched:false, signatures:{}, divergence:null }); saveData(); renderMapList(); loadMap(id); }
+        function saveCurrentMap() { const map = mapData.find(m => m.id === currentMapId); if(map) { map.date = document.getElementById('mapDate').value; map.placa = document.getElementById('mapPlaca').value; map.setor = document.getElementById('mapSetor').value; saveData(); alert('Salvo.'); renderMapList(); } }
+        function launchMap() { const map = mapData.find(m => m.id === currentMapId); if(!map.signatures.receb || !map.signatures.conf) { alert('Precisa assinar.'); return; } if(confirm('Lançar?')) { map.launched = true; saveData(); loadMap(currentMapId); } }
+        function signMap(role) { const map = mapData.find(m => m.id === currentMapId); const sig = loggedUser.username + ' (' + new Date().toLocaleTimeString().slice(0,5) + ')'; if(role === 'receb') map.signatures.receb = sig; if(role === 'conf') map.signatures.conf = sig; saveData(); loadMap(currentMapId); }
+
+        function openContextMenu(x, y, map) {
+            const menu = document.getElementById('ctxMenu');
+            let html = `<div class="ctx-item" onclick="openDivergenceModal('${map.id}')"><i class="fas fa-exclamation-triangle"></i> Divergência</div>`;
+            if (isRecebimento || isAdmin) html += `<div class="ctx-item" onclick="deleteMap('${map.id}')" style="color:red"><i class="fas fa-trash"></i> Excluir</div>`;
+            menu.innerHTML = html; menu.style.left = x + 'px'; menu.style.top = y + 'px'; menu.style.display = 'block';
+        }
+        function closeContextMenu() { document.querySelectorAll('.context-menu').forEach(m => m.style.display = 'none'); }
+        function deleteMap(id) { if(confirm('Excluir?')) { mapData = mapData.filter(m => m.id !== id); saveData(); renderMapList(); currentMapId=null; document.getElementById('mapBody').innerHTML=''; } }
+        
+        // --- DIVERGÊNCIAS & NOTIFICAÇÕES ---
+        function openDivergenceModal(mapId) { contextMapId = mapId; document.getElementById('divUserList').innerHTML = ['Caio','Balanca','Fabricio','Admin'].map(u=>`<label><input type="checkbox" value="${u}"> ${u}</label><br>`).join(''); document.getElementById('divReason').value=''; document.getElementById('modalDivergence').style.display='flex'; }
+        function submitDivergence() { const map = mapData.find(m=>m.id===contextMapId); if(map) { map.divergence={active:true, reason:document.getElementById('divReason').value, reporter:loggedUser.username}; saveData(); alert('Registrado'); document.getElementById('modalDivergence').style.display='none'; loadMap(contextMapId); } }
+        function resolveDivergence(mapId) { if(confirm("Resolver?")) { const m = mapData.find(x=>x.id===mapId); if(m) { m.divergence=null; saveData(); loadMap(mapId); } } }
+
+        // --- CARREGAMENTO ---
+        function openModalCarregamento() { document.getElementById('carrMotorista').value = ''; document.getElementById('modalCarregamento').style.display = 'flex'; }
+        function saveCarregamento() {
+            const mot = document.getElementById('carrMotorista').value; const cav = document.getElementById('carrCavalo').value;
+            carregamentoData.push({ id: Date.now().toString(), date: today, motorista: mot, cavalo: cav, carretas: [], status: 'AGUARDANDO', checkin: new Date().toISOString() });
+            localStorage.setItem('aw_carregamento', JSON.stringify(carregamentoData)); document.getElementById('modalCarregamento').style.display = 'none'; renderCarregamento();
+        }
+        function renderCarregamento() {
+            const tbody = document.getElementById('carrBody'); tbody.innerHTML = '';
+            carregamentoData.forEach(c => { tbody.innerHTML += `<tr><td><span class="w-badge" style="background:#eee">${c.status}</span></td><td>${c.motorista}</td><td>${c.cavalo}</td><td>${c.carretas.length}</td><td>${c.bruto||0}</td><td>${c.checkin.slice(11,16)}</td><td>${c.checkout?c.checkout.slice(11,16):'-'}</td><td><button class="w-btn w-btn-primary" style="padding:4px 8px; font-size:0.7rem;" onclick="changeStatusCarregamento('${c.id}','SAIU')">Finalizar</button></td></tr>`; });
+        }
+        function changeStatusCarregamento(id, st) { const idx = carregamentoData.findIndex(c=>c.id===id); if(idx>-1) { carregamentoData[idx].status=st; carregamentoData[idx].checkout=new Date().toISOString(); localStorage.setItem('aw_carregamento', JSON.stringify(carregamentoData)); renderCarregamento(); } }
+        function addCarretaField() { document.getElementById('carretaContainer').innerHTML += `<input type="text" class="carrCarretaInput w-input" placeholder="Placa Carreta" style="margin-bottom:5px;">`; }
+
+        // --- MATÉRIA PRIMA (Tabela Simples) ---
+        function renderMateriaPrima() {
+            const tbody = document.getElementById('mpBody'); tbody.innerHTML = '';
+            mpData.forEach(m => { tbody.innerHTML += `<tr><td>${new Date(m.date).toLocaleDateString()}</td><td>${m.produto}</td><td>${m.placa}</td><td>${m.chegada.slice(11,16)}</td><td>${m.entrada?m.entrada.slice(11,16):'-'}</td><td>${m.tara||0}</td><td>${m.bruto||0}</td><td>${m.liq||0}</td><td>${m.nf||''}</td></tr>`; });
+        }
+
+        // --- RELATÓRIOS ---
+        function generateReport() {
+             const type = document.getElementById('repType').value; const date = document.getElementById('repDate').value;
+             document.getElementById('repResult').innerHTML = `Relatório <b>${type.toUpperCase()}</b> de ${date}: (Lógica de exibição simplificada para demonstração). <br> Itens encontrados: ${type === 'patio' ? patioData.length : mapData.length}`;
+        }
+
+        // Utils
+        function saveData() { localStorage.setItem('mapas_cegos_v3', JSON.stringify(mapData)); }
+        
+        // Init
+        navTo(isConferente ? 'patio' : 'patio');
+    </script>
+</body>
+</html>

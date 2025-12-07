@@ -1,0 +1,227 @@
+/* wilson-ui.css - V2.0 */
+:root {
+    /* Cores Principais */
+    --w-primary: #D32F2F;
+    --w-primary-dark: #b71c1c;
+    --w-dark: #1a1a1a;
+    --w-dark-sec: #2c2c2c;
+    --w-light: #f4f6f8;
+    --w-paper: #ffffff;
+    --w-text: #333333;
+    --w-text-light: #666666;
+
+    /* Status */
+    --w-success: #2e7d32; --w-success-bg: #e8f5e9;
+    --w-warning: #f57c00; --w-warning-bg: #fff3e0;
+    --w-danger: #c62828; --w-danger-bg: #ffebee;
+
+    /* Layout & Design */
+    --w-sidebar-width: 260px;
+    --w-header-height: 60px;
+    --w-radius: 10px; /* Bordas mais arredondadas */
+    --w-shadow: 0 4px 20px rgba(0,0,0,0.08); /* Sombra suave */
+    --w-shadow-hover: 0 10px 25px rgba(211, 47, 47, 0.15);
+    
+    /* Animações */
+    --w-trans: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+* { box-sizing: border-box; }
+
+body {
+    font-family: 'Segoe UI', 'Roboto', Helvetica, sans-serif;
+    background: var(--w-light);
+    color: var(--w-text);
+    margin: 0;
+    overflow-x: hidden;
+}
+
+/* --- ANIMAÇÕES KEYFRAMES --- */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideInLeft {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+}
+
+/* --- COMPONENTES DE LAYOUT --- */
+.w-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar Responsiva */
+.w-sidebar {
+    width: var(--w-sidebar-width);
+    background: var(--w-dark);
+    color: white;
+    position: fixed;
+    height: 100vh;
+    z-index: 1000;
+    transition: var(--w-trans);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 5px 0 15px rgba(0,0,0,0.1);
+}
+
+.w-brand {
+    padding: 20px;
+    background: var(--w-primary);
+    font-weight: 700;
+    font-size: 1.2rem;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.w-menu { padding: 20px 0; flex: 1; overflow-y: auto; }
+.w-menu-item {
+    padding: 15px 25px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #bbb;
+    text-decoration: none;
+    transition: var(--w-trans);
+    border-left: 4px solid transparent;
+    cursor: pointer;
+}
+.w-menu-item:hover, .w-menu-item.active {
+    background: rgba(255,255,255,0.05);
+    color: white;
+    border-left-color: var(--w-primary);
+    padding-left: 30px; /* Animação de movimento */
+}
+
+/* Área Principal */
+.w-main {
+    flex: 1;
+    margin-left: var(--w-sidebar-width);
+    transition: var(--w-trans);
+    display: flex;
+    flex-direction: column;
+}
+
+.w-header {
+    height: var(--w-header-height);
+    background: var(--w-paper);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    position: sticky;
+    top: 0;
+    z-index: 900;
+}
+
+.w-content { padding: 25px; animation: fadeInUp 0.5s ease-out; }
+
+/* Botão Mobile (Hambúrguer) */
+.w-mobile-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--w-text);
+}
+
+/* --- CARDS & ELEMENTOS --- */
+.w-card {
+    background: var(--w-paper);
+    border-radius: var(--w-radius);
+    padding: 20px;
+    box-shadow: var(--w-shadow);
+    border: 1px solid rgba(0,0,0,0.03);
+    margin-bottom: 20px;
+    transition: var(--w-trans);
+}
+
+.w-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--w-shadow-hover);
+}
+
+.w-card-stripe {
+    border-left: 5px solid var(--w-dark);
+    position: relative;
+    overflow: hidden;
+}
+.w-card-stripe::after {
+    content: ''; position: absolute; top:0; left:0; width: 5px; height: 100%;
+    background: var(--w-primary); transition: var(--w-trans); transform: scaleY(0); transform-origin: bottom;
+}
+.w-card-stripe:hover { border-left-color: transparent; }
+.w-card-stripe:hover::after { transform: scaleY(1); }
+
+/* --- BOTÕES --- */
+.w-btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: var(--w-trans);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.w-btn::before {
+    content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: rgba(255,255,255,0.2); transition: 0.4s; transform: skewX(-20deg);
+}
+.w-btn:hover::before { left: 100%; }
+.w-btn:active { transform: scale(0.95); }
+
+.w-btn-primary { background: linear-gradient(135deg, var(--w-primary), var(--w-primary-dark)); box-shadow: 0 4px 10px rgba(211,47,47,0.3); }
+.w-btn-dark { background: var(--w-dark); }
+.w-btn-outline { background: transparent; border: 2px solid #ddd; color: var(--w-text); }
+.w-btn-outline:hover { border-color: var(--w-primary); color: var(--w-primary); background: white; }
+
+/* --- INPUTS --- */
+.w-input-group { margin-bottom: 15px; }
+.w-label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.85rem; color: var(--w-text-light); }
+.w-input, .w-select {
+    width: 100%; padding: 12px;
+    border: 2px solid #eee; border-radius: var(--w-radius);
+    background: #fafafa; font-size: 0.95rem; transition: var(--w-trans);
+    outline: none;
+}
+.w-input:focus, .w-select:focus {
+    border-color: var(--w-primary); background: white;
+    box-shadow: 0 0 0 4px rgba(211, 47, 47, 0.1);
+}
+
+/* --- GRID SYSTEM RESPONSIVO --- */
+.w-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.w-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.w-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+
+/* --- MEDIA QUERIES (A MÁGICA RESPONSIVA) --- */
+@media (max-width: 1024px) {
+    .w-grid-4 { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 768px) {
+    /* Esconde Sidebar */
+    .w-sidebar { left: -260px; }
+    .w-sidebar.active { left: 0; box-shadow: 0 0 100px rgba(0,0,0,0.5); }
+    
+    /* Ajusta margem principal */
+    .w-main { margin-left: 0; }
+    
+    /* Mostra botão menu */
+    .w-mobile-toggle { display: block; }
+    
+    /* Grids viram coluna única */
+    .w-grid-2, .w-grid-3, .w-grid-4 { grid-template-columns: 1fr; }
+}

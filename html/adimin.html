@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin - WilsonUI</title>
+    <link rel="stylesheet" href="css/wilson-ui.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="w-wrapper">
+    <nav class="w-sidebar">
+        <div class="w-brand"><i class="fas fa-shield-alt"></i> ADMINISTRAÇÃO</div>
+        <div class="w-menu">
+            <a class="w-menu-item active"><i class="fas fa-users"></i> Usuários</a>
+            <a href="CONTROLADORIA_BALANCA.html" class="w-menu-item"><i class="fas fa-external-link-alt"></i> Acessar Sistema</a>
+        </div>
+        <div class="w-user-footer" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> Sair
+        </div>
+    </nav>
+
+    <main class="w-main">
+        <header class="w-header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <button class="w-mobile-toggle" onclick="WilsonUI.sidebar.toggle()"><i class="fas fa-bars"></i></button>
+                <h3>Gerenciamento de Usuários</h3>
+            </div>
+            <div>Bem-vindo, <b id="admin-username">Admin</b></div>
+        </header>
+
+        <div class="w-content">
+            <div class="w-card">
+                <h3 style="margin-top:0; color:var(--w-primary); border-bottom:1px solid #eee; padding-bottom:10px;">Solicitações de Registro</h3>
+                <div id="requests-section"></div>
+            </div>
+
+            <div class="w-card">
+                <h3 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:10px;">Usuários Cadastrados</h3>
+                <ul id="user-list" style="list-style:none; padding:0;"></ul>
+            </div>
+
+            <div class="w-card">
+                <h3>Adicionar Novo Usuário</h3>
+                <form id="addUserForm" class="w-grid-2">
+                    <input type="text" id="newUsername" class="w-input" placeholder="Nome de usuário" required>
+                    <input type="password" id="newPassword" class="w-input" placeholder="Senha" required>
+                    <select id="newRole" class="w-select" required>
+                        <option value="user">Usuário Padrão</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                    <select id="newSector" class="w-select" required>
+                        <option value="geral">Geral</option>
+                        <option value="recebimento">Recebimento</option>
+                        <option value="conferente">Conferente</option>
+                        <option value="administracao">Administração</option>
+                    </select>
+                    <div style="grid-column: 1 / -1;">
+                        <button type="submit" class="w-btn w-btn-success" style="width:100%; justify-content:center;">Adicionar Usuário</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="js/wilson-core.js"></script>
+<script>
+    // LÓGICA ORIGINAL MANTIDA
+    const USERS_KEY = 'mapa_cego_users';
+    const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+
+    (function init() {
+        if (!loggedInUser || loggedInUser.role !== 'admin') {
+            alert('Acesso negado.'); window.location.href = 'login.html'; return;
+        }
+        document.getElementById('admin-username').textContent = loggedInUser.username;
+        document.getElementById('addUserForm').addEventListener('submit', addUser);
+        displayRequests();
+        displayUsers();
+    })();
+
+    function displayUsers() {
+        const users = JSON.parse(localStorage.getItem(USERS_KEY)) || [];
+        const userList = document.getElementById('user-list');
+        userList.innerHTML = '';
+
+        users.forEach(user => {
+            const li = document.createElement('li');
+            li.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee;";
+            
+            let html = `<div><strong>${user.username}</strong> <span class="w-badge" style="background:#eee; color:#333">${user.role}</span> <span class="w-badge" style="background:#e3f2fd; color:#0288d1">${user.sector||'N/A'}</span></div>`;
+            if (user.username !== loggedInUser.username) {
+                html += `<div><button class="w-btn w-btn-dark" style="padding:5px 10px; font-size:0.8rem;" onclick="removeUser('${user.username}')">Remover</button></div>`;
+            }
+            li.innerHTML = html;
+            userList.appendChild(li);
+        });
+    }
+
+    function addUser(event) {
+        event.preventDefault();
+        const newUsername = document.getElementById('newUsername').value.trim();
+        const users = JSON.parse(localStorage.getItem(USERS_KEY)) || [];
+        if (users.some(user => user.username === newUsername)) { alert('Usuário já existe.'); return; }
+        users.push({ 
+            username: newUsername, 
+            password: document.getElementById('newPassword').value.trim(), 
+            role: document.getElementById('newRole').value, 
+            sector: document.getElementById('newSector').value 
+        });
+        localStorage.setItem(USERS_KEY, JSON.stringify(users));
+        displayUsers();
+        document.getElementById('addUserForm').reset();
+    }
+
+    function removeUser(username) {
+        if (confirm(`Remover "${username}"?`)) {
+            let users = JSON.parse(localStorage.getItem(USERS_KEY)) || [];
+            localStorage.setItem(USERS_KEY, JSON.stringify(users.filter(u => u.username !== username)));
+            displayUsers();
+        }
+    }
+
+    function displayRequests() {
+        const REQUESTS_KEY = 'register_requests';
+        const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
+        const pending = requests.filter(req => req.status === 'pending');
+        const section = document.getElementById('requests-section');
+        
+        if (pending.length === 0) { section.innerHTML = '<p style="color:#999; text-align:center;">Nenhuma solicitação.</p>'; return; }
+        
+        section.innerHTML = '';
+        pending.forEach(req => {
+            const div = document.createElement('div');
+            div.className = 'w-card'; 
+            div.style.border = "1px solid #eee"; div.style.boxShadow = "none"; div.style.background = "#f9f9f9";
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><b>${req.fullName}</b> <small>${new Date(req.requestDate).toLocaleDateString()}</small></div>
+                <div class="w-grid-2" style="font-size:0.9rem; margin-bottom:10px;">
+                    <div>Setor: ${req.sector}</div><div>User: ${req.desiredUsername}</div>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button class="w-btn w-btn-success" onclick="approveRequest(${req.id})">Aprovar</button>
+                    <button class="w-btn w-btn-primary" onclick="rejectRequest(${req.id})">Recusar</button>
+                </div>
+            `;
+            section.appendChild(div);
+        });
+    }
+
+    function approveRequest(id) {
+        if(!confirm('Aprovar?')) return;
+        const REQUESTS_KEY = 'register_requests'; const USERS_KEY = 'mapa_cego_users';
+        const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY)||'[]');
+        const idx = requests.findIndex(r => r.id === id);
+        if(idx !== -1) {
+            requests[idx].status = 'approved';
+            localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
+            const users = JSON.parse(localStorage.getItem(USERS_KEY)||'[]');
+            users.push({ username: requests[idx].desiredUsername, password: requests[idx].desiredPassword, role: 'user', sector: requests[idx].sector });
+            localStorage.setItem(USERS_KEY, JSON.stringify(users));
+            displayRequests(); displayUsers();
+        }
+    }
+    function rejectRequest(id) {
+        if(!confirm('Recusar?')) return;
+        const requests = JSON.parse(localStorage.getItem('register_requests')||'[]');
+        const idx = requests.findIndex(r => r.id === id);
+        if(idx !== -1) { requests[idx].status = 'rejected'; localStorage.setItem('register_requests', JSON.stringify(requests)); displayRequests(); }
+    }
+    function logout() { sessionStorage.removeItem('loggedInUser'); window.location.href = 'login.html'; }
+</script>
+</body>
+</html>
