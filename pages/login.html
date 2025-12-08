@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Alimentos Wilson</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/login.css">
+    <link rel="shortcut icon" href="/img/logo-sf.png" type="image/x-icon">
+    <link rel="stylesheet" href="/css/loading.css">
+</head>
+<body>
+  <body onclick="closeContextMenu()">
+    <div id="loading-screen" class="loading-screen hidden">
+        <div class="loader-wrapper">
+            <div class="truck-wrapper">
+                <div class="truck">
+                    <div class="truck-container"></div>
+                    <div class="glases"></div>
+                    <div class="bonet"></div>
+                    <div class="base"></div>
+                    <div class="base-aux"></div>
+                    <div class="wheel-back"></div>
+                    <div class="wheel-front"></div>
+                    <div class="smoke"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal">
+        <h1 style="color:#D32F2F; margin-bottom:10px;">WILSON</h1> 
+        <h2>Controle de Fila</h2>
+        <p>Acesso Restrito - Recebimento</p>
+        
+        <input type="text" id="loginUser" placeholder="Usuário (Ex: Balanca)">
+        <input type="password" id="loginPass" placeholder="Senha">
+        <button onclick="fazerLogin()">ENTRAR</button>
+        
+        <div class="links">
+            <a onclick="abrirRegistro()">Solicitar Acesso</a>
+        </div>
+    </div>
+
+    <div id="modalRegistro" class="overlay">
+        <div class="modal-content">
+            <h3 style="margin-bottom:15px; color:#212121;">Solicitar Novo Acesso</h3>
+            <form id="formRegistro">
+                <input type="text" id="regNome" placeholder="Nome Completo" required>
+                <input type="text" id="regUser" placeholder="Usuário Desejado" required>
+                <input type="password" id="regPass" placeholder="Senha" required>
+                <select id="regSetor">
+                    <option value="recebimento">Recebimento</option>
+                    <option value="conferente">Conferente</option>
+                    <option value="admin">Administração</option>
+                </select>
+                <div style="display:flex; gap:10px;">
+                    <button type="button" onclick="fecharRegistro()" style="background:#ccc; color:#333;">Cancelar</button>
+                    <button type="submit">Solicitar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="fab-login" onclick="abrirSwitcher()" title="Contas Rápidas">
+        <i class="fas fa-users"></i>
+    </div>
+
+    <div id="modalSwitcher" class="overlay">
+        <div class="modal-content" style="width: 350px;">
+            <h3 style="margin-bottom:15px; color:#212121;">Selecionar Conta Teste</h3>
+            <div id="listaContas">
+                </div>
+            <button onclick="document.getElementById('modalSwitcher').style.display='none'" style="margin-top:15px; background:#ccc; color:#333; width:100%; padding:10px; border:none; border-radius:5px; cursor:pointer;">Fechar</button>
+        </div>
+    </div>
+
+    <script src="/js/login.js"></script>
+    <script>
+      function showLoading() {
+          document.getElementById("loading-screen").classList.remove("hidden");
+      }
+      
+      function hideLoading() {
+          document.getElementById("loading-screen").classList.add("hidden");
+      }
+      
+      /* Exemplo: abre o loading por 3 segundos ao carregar a página */
+      window.onload = () => {
+          showLoading();
+          setTimeout(hideLoading, 1500);
+      };
+      </script>
+      
+</body>
+</html>

@@ -4,19 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin - WilsonUI</title>
-    <link rel="stylesheet" href="css/wilson-ui.css">
+    <link rel="stylesheet" href="/css/wilson-ui.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="shortcut icon" href="/img/logo-sf.png" type="image/x-icon">
+    <link rel="stylesheet" href="/css/loading.css">
 </head>
 <body>
-
+    <body onclick="closeContextMenu()">
+        <div id="loading-screen" class="loading-screen hidden">
+            <div class="loader-wrapper">
+                <div class="truck-wrapper">
+                    <div class="truck">
+                        <div class="truck-container"></div>
+                        <div class="glases"></div>
+                        <div class="bonet"></div>
+                        <div class="base"></div>
+                        <div class="base-aux"></div>
+                        <div class="wheel-back"></div>
+                        <div class="wheel-front"></div>
+                        <div class="smoke"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 <div class="w-wrapper">
     <nav class="w-sidebar">
         <div class="w-brand"><i class="fas fa-shield-alt"></i> ADMINISTRAÇÃO</div>
         <div class="w-menu">
             <a class="w-menu-item active"><i class="fas fa-users"></i> Usuários</a>
-            <a href="CONTROLADORIA_BALANCA.html" class="w-menu-item"><i class="fas fa-external-link-alt"></i> Acessar Sistema</a>
+            <a href="index.html" class="w-menu-item"><i class="fas fa-external-link-alt"></i> Acessar Sistema</a>
         </div>
-        <div class="w-user-footer" onclick="logout()">
+        <div class="w-user-footer" onclick="logout()" style="padding:15px; border-top:1px solid #333; cursor:pointer; color:#ccc;">
             <i class="fas fa-sign-out-alt"></i> Sair
         </div>
     </nav>
@@ -67,7 +85,7 @@
 
 <script src="js/wilson-core.js"></script>
 <script>
-    // LÓGICA ORIGINAL MANTIDA
+    // MANUTENÇÃO DA LÓGICA ORIGINAL
     const USERS_KEY = 'mapa_cego_users';
     const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
 
@@ -90,7 +108,7 @@
             const li = document.createElement('li');
             li.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee;";
             
-            let html = `<div><strong>${user.username}</strong> <span class="w-badge" style="background:#eee; color:#333">${user.role}</span> <span class="w-badge" style="background:#e3f2fd; color:#0288d1">${user.sector||'N/A'}</span></div>`;
+            let html = `<div><strong>${user.username}</strong> <span class="w-badge" style="background:#eee; color:#333; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${user.role}</span> <span class="w-badge" style="background:#e3f2fd; color:#0288d1; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${user.sector||'N/A'}</span></div>`;
             if (user.username !== loggedInUser.username) {
                 html += `<div><button class="w-btn w-btn-dark" style="padding:5px 10px; font-size:0.8rem;" onclick="removeUser('${user.username}')">Remover</button></div>`;
             }
@@ -172,5 +190,21 @@
     }
     function logout() { sessionStorage.removeItem('loggedInUser'); window.location.href = 'login.html'; }
 </script>
+<script>
+    function showLoading() {
+        document.getElementById("loading-screen").classList.remove("hidden");
+    }
+    
+    function hideLoading() {
+        document.getElementById("loading-screen").classList.add("hidden");
+    }
+    
+    /* Exemplo: abre o loading por 3 segundos ao carregar a página */
+    window.onload = () => {
+        showLoading();
+        setTimeout(hideLoading, 1500);
+    };
+    </script>
+    
 </body>
 </html>

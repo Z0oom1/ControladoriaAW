@@ -1,0 +1,52 @@
+/* css/app-custom.css - Específico das regras de negócio */
+
+/* KANBAN (Pátio) */
+.board-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; min-width: 1000px; height: 100%; }
+.board-col { background: #eef0f2; border-radius: var(--w-radius); display: flex; flex-direction: column; height: 75vh; border: 1px solid #e0e0e0; }
+.col-header { padding: 12px; font-weight: bold; text-align: center; color: white; border-radius: 6px 6px 0 0; }
+.col-alm { background: var(--w-warning); } 
+.col-gava { background: var(--w-info); } 
+.col-out { background: #546e7a; } 
+.col-saiu { background: var(--w-success); }
+.col-body { flex: 1; padding: 10px; overflow-y: auto; }
+
+/* Truck Cards (Adaptado ao W-CARD) */
+.truck-card { background: white; border-radius: 6px; padding: 15px; margin-bottom: 10px; border-left: 4px solid var(--w-dark); cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: 0.2s; position: relative; }
+.truck-card:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+.truck-card.expanded { border-left-color: var(--w-primary); background: #fffbfb; }
+.card-expanded-content { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eee; }
+.truck-card.expanded .card-expanded-content { display: block; }
+
+/* MAPA CEGO (Folha A4) */
+.sheet { background: white; border: 1px solid #ccc; padding: 30px; box-shadow: var(--w-shadow); max-width: 1100px; margin: 0 auto; position: relative; }
+.mc-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+.mc-table thead th { background: #333; color: white; padding: 8px; text-align: left; }
+.mc-table td { border: 1px solid #ccc; padding: 6px; }
+.cell { width: 100%; border: none; outline: none; background: transparent; font-family: inherit; font-size: 14px; }
+.cell:focus { background: #e3f2fd; }
+.cell-locked { background: #f0f0f0; color: #888; cursor: not-allowed; }
+
+/* Sidebar Lista de Mapas */
+.mc-layout { display: flex; height: 100%; gap: 20px; }
+.mc-sidebar-list { width: 280px; background: white; border-radius: var(--w-radius); border: 1px solid #eee; display: flex; flex-direction: column; overflow: hidden; height: 80vh; }
+.mc-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
+.mc-item:hover { background: #f5f5f5; }
+.mc-item.selected { background: var(--w-danger-bg); border-left: 4px solid var(--w-primary); }
+.mc-item.has-divergence { border-left: 4px solid #b71c1c !important; background: #ffebee; }
+
+/* FAB Button */
+.fab { position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; background: var(--w-primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(211,47,47,0.4); z-index: 500; transition: 0.3s; }
+.fab:hover { transform: scale(1.1); background: var(--w-primary-dark); }
+
+/* Context Menu */
+.context-menu { position: absolute; background: white; border: 1px solid #ddd; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 9999; display: none; width: 180px; border-radius: 6px; padding: 5px 0; }
+.ctx-item { padding: 10px 15px; cursor: pointer; font-size: 0.9rem; display: flex; gap: 10px; align-items: center; color: #333; }
+.ctx-item:hover { background: #f5f5f5; color: var(--w-primary); }
+
+@media (max-width: 1024px) {
+    .board-container { grid-template-columns: 1fr; display: block; overflow-y: auto; }
+    .board-col { margin-bottom: 20px; min-height: 300px; height: auto; }
+    .mc-layout { flex-direction: column; }
+    .mc-sidebar-list { width: 100%; max-height: 200px; margin-bottom: 15px; height: auto; }
+    .sheet { overflow-x: auto; padding: 10px; }
+}
