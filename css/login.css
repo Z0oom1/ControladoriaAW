@@ -8,18 +8,16 @@
     padding: 0;
 }
 
-/* CORREÇÃO DE CENTRALIZAÇÃO:
-   Definimos html e body para ocupar 100% da altura e largura da janela.
-*/
+
 html, body {
     height: 100%;
     width: 100%;
-    overflow: hidden; /* Evita barras de rolagem indesejadas */
+    overflow: hidden; 
 }
 
 body {
     background: #f4f4f4;
-    position: relative; /* Necessário para o posicionamento absoluto do modal */
+    position: relative; 
 }
 
 /* Fundo decorativo */
@@ -39,10 +37,10 @@ body::after {
    ========================================================================== */
 .modal {
     z-index: 10;
-    position: absolute; /* Remove do fluxo e permite posicionamento exato */
-    top: 50%;           /* Empurra 50% para baixo */
-    left: 50%;          /* Empurra 50% para a direita */
-    transform: translate(-50%, -50%); /* Traz de volta o tamanho exato do elemento para o centro */
+    position: absolute; 
+    top: 50%;           
+    left: 50%;          
+    transform: translate(-50%, -50%); 
     
     display: flex;
     flex-direction: column;
@@ -73,7 +71,7 @@ p {
     margin-bottom: 25px;
 }
 
-/* Inputs e Botões */
+
 input, select {
     width: 100%;
     padding: 12px;
@@ -105,7 +103,7 @@ button:hover {
     background-color: #9A0007;
 }
 
-/* Links */
+
 .links {
     margin-top: 15px;
     font-size: 0.8rem;
@@ -168,7 +166,7 @@ button:hover {
     background: #D32F2F;
 }
 
-/* Itens da Lista de Contas */
+
 .account-item {
     padding: 10px;
     border-bottom: 1px solid #eee;
