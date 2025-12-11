@@ -225,7 +225,7 @@ input, textarea, select {
 .prod-row { font-size: 0.85rem; display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f9f9f9; }
 .sector-tag { display: inline-block; background: #333; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-top: 5px; font-weight: bold; }
 
-/* Botão Flutuante (FAB) */
+
 .fab {
     position: fixed;
     bottom: 30px;
@@ -289,7 +289,7 @@ table.mc-table { width: 100%; border-collapse: collapse; margin-top: 12px; backg
 /* Controles e Botões */
 .controls { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
 .btn { padding: 10px 14px; border-radius: 8px; border: 0; cursor: pointer; font-weight: 600; color: white; }
-.btn-save { background: var(--accent); }
+.btn-save { background: var(--accent); margin-left: 15px;}
 .btn-launch { background: #ff3535; }
 .btn-edit { background: #333; margin-right: 10px;}
 .btn-request { background: #FF9800; color: white; }
@@ -335,6 +335,73 @@ table.mc-table { width: 100%; border-collapse: collapse; margin-top: 12px; backg
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 2000; }
 .modal-box { background: white; padding: 25px; border-radius: 8px; width: 500px; max-width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); }
 .modal-box.large { width: 800px; }
+
+
+/* --- ESTILO DE POP-UP (MODAL) --- */
+
+
+.overlay {
+    position: fixed; 
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); 
+    z-index: 9999; 
+    
+    
+    display: none; 
+    justify-content: center; 
+    align-items: center;
+    backdrop-filter: blur(2px);
+}
+
+#modalProductSelect {
+    z-index: 10001 !important; 
+}
+
+/* A Caixa Branca do Pop-up */
+.modal-content {
+    background: white;
+    width: 90%;
+    max-width: 450px;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    position: relative;
+    animation: popupIn 0.3s ease-out;
+}
+
+.st-called {
+    background-color: #1976D2;
+    color: white;
+}
+
+
+@keyframes popupIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+
+.modal-input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box; 
+    font-size: 1rem;
+}
+
+
+.modal-content h3 {
+    margin-top: 0;
+    color: #333;
+    border-bottom: 2px solid #D32F2F;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
 
 /* Notificações & Histórico */
 .req-container { display: flex; gap: 20px; height: 100%; }
@@ -439,14 +506,55 @@ table.mc-table { width: 100%; border-collapse: collapse; margin-top: 12px; backg
 }
 
 .laudo-sim {
-    background-color: #2196F3; /* Azul */
+    background-color: #2196F3; 
     color: white;
     border: 1px solid #1976D2;
 }
 
 .laudo-nao {
-    background-color: #9E9E9E; /* Cinza */
+    background-color: #9E9E9E; 
     color: white;
     border: 1px solid #757575;
 }
 
+/* --- ESTILOS PARA DIVERGÊNCIA E MAPA CEGO --- */
+
+/* Mascara para esconder a Qtd NF do Conferente */
+.blind-mask {
+    background: #eee;
+    color: transparent; 
+    text-shadow: 0 0 5px rgba(0,0,0,0.5); 
+    pointer-events: none;
+    user-select: none;
+}
+
+/* Estilos do Relatório de Divergência */
+.div-row-detail {
+    display: flex; 
+    justify-content: space-between; 
+    padding: 8px; 
+    border-bottom: 1px solid #eee; 
+    font-size: 0.9rem;
+    align-items: center;
+}
+
+.diff-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+
+.diff-pos {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.diff-neg {
+    background-color: #ffebee;
+    color: #b71c1c;
+}
+
+.rep-card.status-divergence {
+    border-left-color: #b71c1c;
+}
